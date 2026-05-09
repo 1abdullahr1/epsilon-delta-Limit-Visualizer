@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ε-δ Limit Visualizer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: #111111;
+            color: #e0e0e0;
+            font-family: 'Inter', system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app {
+            width: 920px;
+            background: #1a1a1a;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+        
+        .header {
+            background: #111;
+            padding: 24px 32px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 22px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+        
+        .controls {
+            padding: 20px 32px;
+            background: #222;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .slider-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .slider-label {
+            font-size: 15px;
+            font-weight: 500;
+            color: #ccc;
+            white-space: nowrap;
+            min-width: 140px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            background: linear-gradient(90deg, #4a9eff 0%, #4a9eff var(--value, 25%), #333 var(--value, 25%), #333 100%);
+            border-radius: 9999px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            background: #4a9eff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 12px -2px #4a9eff;
+            border: 3px solid #111;
+        }
+        
+        .value-display {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: #4a9eff;
+            min-width: 80px;
+            text-align: right;
+        }
+        
+        .graph-container {
+            position: relative;
+            padding: 30px 32px 20px;
+            background: #1a1a1a;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+            border-radius: 12px;
+            background: #111111;
+        }
+        
+        .footer {
+            padding: 16px 32px;
+            background: #111;
+            font-size: 15px;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #333;
+        }
+        
+        .info {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 16px;
+            color: #ddd;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .title-badge {
+            background: #222;
+            color: #4a9eff;
+            font-size: 13px;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <h1>Visualizing ε-δ for f(x) = 3x − 5</h1>
+            <div class="title-badge">limit = 1 at x = 2</div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <div class="slider-container">
+                <div class="slider-label">
+                    ε (output band)
+                </div>
+                <input type="range" id="epsilonSlider" min="0.01" max="1.5" step="0.01" value="0.50">
+                <div id="epsilonValue" class="value-display">0.50</div>
+            </div>
+            
+            <div style="background: #222; padding: 8px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                <span style="color: #2e8b57;">δ =</span>
+                <span id="deltaValue" style="color: #2e8b57; font-family: 'Space Grotesk', sans-serif; font-size: 18px;">0.167</span>
+            </div>
+        </div>
+        
+        <!-- Graph -->
+        <div class="graph-container">
+            <canvas id="graph" width="800" height="420"></canvas>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div id="info" class="info">
+                ε = <span id="footerEpsilon">0.50</span> → δ = ε/3 = <span id="footerDelta">0.167</span> 
+                | f(x) = 3x−5, target L = 1 at x = 2
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #2e8b57;"></div>
+                    <span>δ interval (input)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #b38b4d;"></div>
+                    <span>ε band (output)</span>
+                </div>
+                <div class="legend-item">
+                    <span style="color: #4a9eff;">━━━</span>
+                    <span>f(x)</span>
+                </div>
+            </div>
+            
+            <div style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px;">
+                <span>Interactive ε-δ Visualizer</span>
+                <span style="background: #222; padding: 2px 6px; border-radius: 4px;">Linear function</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants for this specific example
+        const A = 2;                    // x-value where limit is taken
+        const L = 1;                    // limit value
+        const SLOPE = 3;                // slope of f(x) = 3x - 5
+        const X_MIN = 0.4;
+        const X_MAX = 3.6;
+        const Y_MIN = -0.8;
+        const Y_MAX = 2.8;
+        
+        let epsilon = 0.50;
+        
+        // Canvas setup
+        const canvas = document.getElementById('graph');
+        const ctx = canvas.getContext('2d');
+        const WIDTH = 800;
+        const HEIGHT = 420;
+        
+        // Plot margins
+        const MARGIN_LEFT = 85;
+        const MARGIN_RIGHT = 40;
+        const MARGIN_TOP = 40;
+        const MARGIN_BOTTOM = 55;
+        const PLOT_WIDTH = WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
+        const PLOT_HEIGHT = HEIGHT - MARGIN_TOP - MARGIN_BOTTOM;
+        
+        // Scale helpers
+        function getCanvasX(x) {
+            return MARGIN_LEFT + (x - X_MIN) * (PLOT_WIDTH / (X_MAX - X_MIN));
+        }
+        
+        function getCanvasY(y) {
+            return MARGIN_TOP + (Y_MAX - y) * (PLOT_HEIGHT / (Y_MAX - Y_MIN));
+        }
+        
+        // Main draw function
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+            
+            // Dark background
+            ctx.fillStyle = '#111111';
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            
+            // Plot area clip
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(MARGIN_LEFT, MARGIN_TOP, PLOT_WIDTH, PLOT_HEIGHT);
+            ctx.clip();
+            
+            // === HORIZONTAL ε BAND (brown) ===
+            const yUpper = L + epsilon;
+            const yLower = L - epsilon;
+            const canvasYUpper = getCanvasY(yUpper);
+            const canvasYLower = getCanvasY(yLower);
+            
+            // Fill band
+            ctx.fillStyle = '#b38b4d';
+            ctx.globalAlpha = 0.75;
+            ctx.fillRect(MARGIN_LEFT, Math.max(MARGIN_TOP, canvasYUpper), PLOT_WIDTH, Math.min(PLOT_HEIGHT, canvasYLower - canvasYUpper));
+            ctx.globalAlpha = 1.0;
+            
+            // Dashed orange borders
+            ctx.strokeStyle = '#ffcc66';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(MARGIN_LEFT, canvasYUpper);
+            ctx.lineTo(MARGIN_LEFT + PLOT_WIDTH, canvasYUpper);
+            ctx.moveTo(MARGIN_LEFT, canvasYLower);
+            ctx.lineTo(MARGIN_LEFT + PLOT_WIDTH, canvasYLower);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // === VERTICAL δ BAND (green) ===
+            const deltaVal = epsilon / SLOPE;
+            const xLeft = A - deltaVal;
+            const xRight = A + deltaVal;
+            const canvasXLeft = getCanvasX(xLeft);
+            const canvasXRight = getCanvasX(xRight);
+            
+            // Fill band (clipped already)
+            ctx.fillStyle = '#2e8b57';
+            ctx.globalAlpha = 0.65;
+            ctx.fillRect(canvasXLeft, MARGIN_TOP, canvasXRight - canvasXLeft, PLOT_HEIGHT);
+            ctx.globalAlpha = 1.0;
+            
+            // Dashed green border
+            ctx.strokeStyle = '#22cc88';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.rect(canvasXLeft, MARGIN_TOP, canvasXRight - canvasXLeft, PLOT_HEIGHT);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.restore(); // End clip
+            
+            // === AXES ===
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 2;
+            
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(MARGIN_LEFT, MARGIN_TOP);
+            ctx.lineTo(MARGIN_LEFT, MARGIN_TOP + PLOT_HEIGHT);
+            ctx.stroke();
+            
+            // X-axis (at y = 0)
+            const yZero = getCanvasY(0);
+            if (yZero >= MARGIN_TOP && yZero <= MARGIN_TOP + PLOT_HEIGHT) {
+                ctx.beginPath();
+                ctx.moveTo(MARGIN_LEFT, yZero);
+                ctx.lineTo(MARGIN_LEFT + PLOT_WIDTH, yZero);
+                ctx.stroke();
+            }
+            
+            // === TICKS & LABELS ===
+            ctx.fillStyle = '#aaa';
+            ctx.font = '500 13px Inter';
+            ctx.textBaseline = 'middle';
+            
+            // X ticks
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let i = 1; i <= 3; i++) {
+                const x = i;
+                if (x < X_MIN || x > X_MAX) continue;
+                const tx = getCanvasX(x);
+                // Tick
+                ctx.fillStyle = '#aaa';
+                ctx.fillRect(tx - 1, MARGIN_TOP + PLOT_HEIGHT, 2, 8);
+                // Label
+                ctx.fillText(x.toString(), tx, MARGIN_TOP + PLOT_HEIGHT + 22);
+            }
+            
+            // Y ticks
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let j = 0; j <= 2; j++) {
+                const y = j;
+                if (y < Y_MIN || y > Y_MAX) continue;
+                const ty = getCanvasY(y);
+                // Tick
+                ctx.fillRect(MARGIN_LEFT - 8, ty - 1, 8, 2);
+                // Label
+                ctx.fillText(y.toString(), MARGIN_LEFT - 14, ty);
+            }
+            
+            // === FUNCTION LINE (blue) ===
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(MARGIN_LEFT, MARGIN_TOP, PLOT_WIDTH, PLOT_HEIGHT);
+            ctx.clip();
+            
+            ctx.strokeStyle = '#4a9eff';
+            ctx.lineWidth = 5;
+            ctx.shadowColor = '#4a9eff';
+            ctx.shadowBlur = 12;
+            
+            const startX = getCanvasX(X_MIN);
+            const startY = getCanvasY(3 * X_MIN - 5);
+            const endX = getCanvasX(X_MAX);
+            const endY = getCanvasY(3 * X_MAX - 5);
+            
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+            ctx.restore();
+            
+            // === POINT AT (A, L) ===
+            const pointX = getCanvasX(A);
+            const pointY = getCanvasY(L);
+            
+            // Shadow
+            ctx.shadowColor = '#000';
+            ctx.shadowBlur = 8;
+            ctx.fillStyle = '#111';
+            ctx.beginPath();
+            ctx.arc(pointX, pointY, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Main dot
+            ctx.fillStyle = '#111';
+            ctx.beginPath();
+            ctx.arc(pointX, pointY, 7, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#4a9eff';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.arc(pointX, pointY, 7, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Small white center
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(pointX, pointY, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // === LABELS ON GRAPH ===
+            ctx.shadowBlur = 0;
+            
+            // L+ε and L-ε labels (left side)
+            ctx.fillStyle = '#ffcc66';
+            ctx.font = '600 15px Inter';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            
+            // L+ε
+            ctx.fillText(`L+ε = ${(L + epsilon).toFixed(2)}`, MARGIN_LEFT - 12, canvasYUpper);
+            
+            // L-ε
+            ctx.fillText(`L-ε = ${(L - epsilon).toFixed(2)}`, MARGIN_LEFT - 12, canvasYLower);
+            
+            // δ label (above green band)
+            const centerX = (canvasXLeft + canvasXRight) / 2;
+            ctx.fillStyle = '#22cc88';
+            ctx.font = '700 18px Space Grotesk';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('δ', centerX, MARGIN_TOP - 8);
+            
+            // Small "a-δ" and "a+δ" labels below x-axis for clarity
+            ctx.font = '500 12px Inter';
+            ctx.fillStyle = '#22cc88';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText((A - deltaVal).toFixed(2), canvasXLeft, MARGIN_TOP + PLOT_HEIGHT + 38);
+            ctx.fillText((A + deltaVal).toFixed(2), canvasXRight, MARGIN_TOP + PLOT_HEIGHT + 38);
+            
+            // Vertical "x = 2" label
+            ctx.save();
+            ctx.fillStyle = '#aaa';
+            ctx.font = '500 13px Inter';
+            ctx.textAlign = 'center';
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('x = 2', - (MARGIN_TOP + PLOT_HEIGHT / 2), getCanvasX(A) + 18);
+            ctx.restore();
+        }
+        
+        // Update UI values
+        function updateUI() {
+            const deltaVal = (epsilon / SLOPE).toFixed(3);
+            
+            // Slider value
+            document.getElementById('epsilonValue').textContent = epsilon.toFixed(2);
+            
+            // Delta display in controls
+            document.getElementById('deltaValue').textContent = deltaVal;
+            
+            // Footer info
+            document.getElementById('footerEpsilon').textContent = epsilon.toFixed(2);
+            document.getElementById('footerDelta').textContent = deltaVal;
+        }
+        
+        // Initialize everything
+        function init() {
+            const slider = document.getElementById('epsilonSlider');
+            
+            // Initial draw
+            draw();
+            updateUI();
+            
+            // Slider interaction
+            slider.addEventListener('input', function() {
+                epsilon = parseFloat(this.value);
+                draw();
+                updateUI();
+            });
+            
+            // Keyboard support (arrow keys)
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+                    epsilon = Math.min(1.5, epsilon + 0.05);
+                    slider.value = epsilon;
+                    draw();
+                    updateUI();
+                }
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+                    epsilon = Math.max(0.01, epsilon - 0.05);
+                    slider.value = epsilon;
+                    draw();
+                    updateUI();
+                }
+            });
+            
+            console.log('%c✅ ε-δ Limit Visualizer ready! Drag the slider to explore how ε controls δ.', 'color:#4a9eff; font-family:monospace;');
+        }
+        
+        // Start the app
+        window.onload = init;
+    </script>
+</body>
+</html>
